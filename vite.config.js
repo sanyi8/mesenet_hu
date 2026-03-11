@@ -12,6 +12,7 @@ export default defineConfig({
         name: 'mesenet.hu',
         short_name: 'Mesenet',
         description: 'Digitális meseolvasó gyerekeknek',
+        start_url: '/',
         theme_color: '#0f172a',
         background_color: '#0f172a',
         display: 'standalone',
@@ -30,6 +31,8 @@ export default defineConfig({
         ]
       },
       workbox: {
+        cacheId: 'mesenet-pwa-v2-https', // Force service worker cache bust for HTTPS
+        cleanupOutdatedCaches: true, // Auto-remove old HTTP caches
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         // Ensure index.html fallback for client-side routing while offline
         navigateFallback: '/index.html',

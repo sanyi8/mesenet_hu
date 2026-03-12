@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useReading } from '../context/ReadingContext';
 import { useStories } from '../context/StoryContext';
+import DrawingCanvas from '../components/DrawingCanvas';
 
 const QUESTION_EMOJIS = ['🫶', '🌱', '💡'];
 
@@ -24,6 +25,8 @@ export default function ReaderPage() {
     const [currentRating, setCurrentRating] = useState(ratings[id] || null);
     const [lightboxOpen, setLightboxOpen] = useState(false);
     const [uploadedFile, setUploadedFile] = useState(null);
+    const [isDrawingMode, setIsDrawingMode] = useState(false);
+    const [tempDrawing, setTempDrawing] = useState(null);
 
     // Restore scroll position
     useEffect(() => {
@@ -93,7 +96,19 @@ export default function ReaderPage() {
         }
     };
 
-    const handleFileChange = (e) => { const f = e.target.files[0]; if (f) setUploadedFile(f); };
+    const handleFileChange = (e) => { 
+        const f = e.target.files[0]; 
+        if (f) {
+            setUploadedFile(f);
+            setTempDrawing(null);
+        }
+    };
+
+    const handleSaveDrawing = (dataUrl) => {
+        setTempDrawing(dataUrl);
+        setIsDrawingMode(false);
+        setUploadedFile({ name: 'Saját rajz.png' }); // Mock file object
+    };
 
     if (isLoading) return <div className="reader-shell fade-in" style={{ textAlign: 'center', paddingTop: 100 }}>⏳ Betöltés...</div>;
     if (error) return <div className="reader-shell fade-in" style={{ textAlign: 'center', paddingTop: 100 }}>⚠️ Hiba: {error}</div>;
@@ -170,54 +185,86 @@ export default function ReaderPage() {
                 <div dangerouslySetInnerHTML={{ __html: contentHtml }} />
 
                 {/* ── Alkotóműhely — Creative Workshop ── */}
-                <div style={{
+                <div id="alkotomuhely" style={{
                     margin: '2.5em 0 1em', padding: '2em 1.5em',
                     background: 'linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%)',
                     borderRadius: 20, textAlign: 'center',
                     border: '2px solid rgba(255,200,100,.25)',
                     boxShadow: '0 4px 24px rgba(0,0,0,.4)',
+                    overflow: 'hidden'
                 }}>
-                    <div style={{ fontSize: '2.8em', marginBottom: '.2em' }}>🎨</div>
-                    <h3 style={{ color: '#ffd700', fontSize: '1.3em', margin: '0 0 .5em', letterSpacing: .5 }}>
-                        Készítsd el a saját illusztrációdat!
-                    </h3>
-                    <p style={{ color: 'rgba(255,255,255,.8)', fontSize: '.95em', margin: '0 0 1.4em', lineHeight: 1.65, maxWidth: 440, display: 'inline-block' }}>
-                        Rajzold le, mi tetszett a legjobban a mesében, töltsd fel, és a{' '}
-                        <strong style={{ color: '#ffd700' }}>Mesegép</strong> jövő héten életre kelti!
-                    </p>
-                    <div>
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            id="mese-drawing-file-input"
-                            accept="image/*"
-                            style={{ display: 'none' }}
-                            onChange={handleFileChange}
-                        />
-                        <button
-                            id="mese-drawing-upload-btn"
-                            className="mese-btn"
-                            onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
-                            style={{
-                                background: 'linear-gradient(135deg,#ffd700,#ffaa00)',
-                                color: '#1a1a2e', border: 'none',
-                                padding: '.75em 2em', borderRadius: 50,
-                                fontSize: '1em', fontWeight: 700, cursor: 'pointer',
-                                letterSpacing: .5, boxShadow: '0 4px 16px rgba(255,200,0,.35)',
-                                transition: 'transform .15s, box-shadow .15s',
-                            }}
-                            onMouseOver={e => { e.currentTarget.style.transform = 'scale(1.06)'; e.currentTarget.style.boxShadow = '0 6px 22px rgba(255,200,0,.55)'; }}
-                            onMouseOut={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(255,200,0,.35)'; }}
-                        >
-                            ✏️ Rajz feltöltése
-                        </button>
-                    </div>
-                    {uploadedFile && (
-                        <p style={{ color: '#ffd700', fontSize: '.85em', marginTop: '1em' }}>
-                            ✅ Feltöltve: <strong>{uploadedFile.name}</strong> — hamarosan életre kel! 🪄
-                        </p>
+                    {!isDrawingMode ? (
+                        <>
+                            <div style={{ fontSize: '2.8em', marginBottom: '.2em' }}>🎨</div>
+                            <h3 style={{ color: '#ffd700', fontSize: '1.3em', margin: '0 0 .5em', letterSpacing: .5 }}>
+                                Készítsd el a saját illusztrációdat!
+                            </h3>
+                            <p style={{ color: 'rgba(255,255,255,.8)', fontSize: '.95em', margin: '0 0 1.4em', lineHeight: 1.65, maxWidth: 440, display: 'inline-block' }}>
+                                Rajzold le, mi tetszett a legjobban a mesében, vagy tölts fel egy fotót, és a{' '}
+                                <strong style={{ color: '#ffd700' }}>Mesegép</strong> jövő héten életre kelti!
+                            </p>
+                            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                <button
+                                    className="mese-btn"
+                                    onClick={(e) => { e.stopPropagation(); setIsDrawingMode(true); }}
+                                    style={{
+                                        background: 'linear-gradient(135deg,#ffd700,#ffaa00)',
+                                        color: '#1a1a2e', border: 'none',
+                                        padding: '.75em 1.8em', borderRadius: 50,
+                                        fontSize: '1em', fontWeight: 700, cursor: 'pointer',
+                                        letterSpacing: .5, boxShadow: '0 4px 16px rgba(255,200,0,.35)',
+                                        transition: 'transform .15s, box-shadow .15s',
+                                    }}
+                                >
+                                    ✏️ Rajzolok egyet
+                                </button>
+                                
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    id="mese-drawing-file-input"
+                                    accept="image/*"
+                                    style={{ display: 'none' }}
+                                    onChange={handleFileChange}
+                                />
+                                <button
+                                    className="mese-btn"
+                                    onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                                    style={{
+                                        background: 'rgba(255,255,255,0.08)',
+                                        color: 'white', border: '1px solid rgba(255,255,255,0.2)',
+                                        padding: '.75em 1.8em', borderRadius: 50,
+                                        fontSize: '1em', fontWeight: 600, cursor: 'pointer',
+                                        backdropFilter: 'blur(5px)'
+                                    }}
+                                >
+                                    📸 Fotó feltöltése
+                                </button>
+                            </div>
+
+                            {tempDrawing && (
+                                <div style={{ marginTop: '1.5em', position: 'relative', display: 'inline-block' }}>
+                                    <img src={tempDrawing} alt="Saját rajz" style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '12px', border: '2px solid #ffd700' }} />
+                                    <div style={{ position: 'absolute', top: -10, right: -10, background: '#ffd700', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#1a1a2e' }}>✨</div>
+                                </div>
+                            )}
+
+                            {uploadedFile && (
+                                <p style={{ color: '#ffd700', fontSize: '.85em', marginTop: '1.2em' }}>
+                                    ✅ <strong>{uploadedFile.name}</strong> — elmentve! A Mesegép hamarosan dolgozni kezd rajta. 🪄
+                                </p>
+                            )}
+                            <p style={{ color: 'rgba(255,255,255,.35)', fontSize: '.72em', marginTop: '1em' }}>Támogatott: szabadkézi rajz, PNG, JPG</p>
+                        </>
+                    ) : (
+                        <div className="fade-in">
+                            <h3 style={{ color: '#ffd700', fontSize: '1.1em', margin: '0 0 1em' }}>Mesenet Rajztábla</h3>
+                            <DrawingCanvas 
+                                onSave={handleSaveDrawing} 
+                                onCancel={() => setIsDrawingMode(false)} 
+                            />
+                        </div>
                     )}
-                    <p style={{ color: 'rgba(255,255,255,.35)', fontSize: '.72em', marginTop: '.8em' }}>PNG, JPG vagy rajz · max. 10 MB</p>
                 </div>
 
                 {/* End Block */}

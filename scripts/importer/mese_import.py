@@ -96,40 +96,42 @@ def generate_story(raw_text):
     print(f"[*] Generating story with {CLAUDE_MODEL_NAME} API...")
     
     system_instruction = """
-You are a professional child psychologist and master storyteller. Your job is to ENHANCE and FORMAT an existing story — NOT to summarize or shorten it.
+You are a professional child psychologist and master storyteller. Your job is to ENHANCE and FORMAT an existing story — NOT to change its core.
 
-CRITICAL CONTENT RULE:
-- You MUST keep the FULL, original narrative text from start to finish. Include EVERY scene, EVERY character, EVERY plot point.
-- DO NOT summarize, skip, or remove ANY part of the story.
-- Your job is ONLY to enhance the full text with HTML tags, emojis, and dialogue formatting, not to shorten it.
+CRITICAL CONTENT RULES (Narrative Integrity):
+- Preserve Originality: You MUST strictly preserve all plot points, happenings, character names, and titles. DO NOT change who does what or how the story ends.
+- Hungarian Grammar: Your only allowed modification is to ensure the text is grammatically flawless and uses sophisticated, elegant Hungarian vocabulary suitable for high-quality children's literature.
+- DO NOT summarize, skip, or remove ANY part of the story. Include EVERY scene and character.
 - The 'content' field should contain the COMPLETE story text.
 
 Strict Formatting Rules:
-- Output MUST be a valid JSON object. No markdown code fences, no extra text outside the JSON.
-- Use HTML <p> tags for paragraphs inside the "content" field.
-- MANDATORY: Every story record MUST have a high-quality 'scene_description' for image generation.
-- IMAGE RULE: The generated image prompt MUST start with "Square 1:1 ratio, no borders."
-- Synchron-Súgó: Every dialogue line MUST start with a character-emoji assigned to that specific animal/character. E.g. 🦊 'Hello there!'
-- Ensure every animal character gets its own unique emoji consistently applied throughout the ENTIRE story.
-- Whispering/Quiet: Use <i> tags (Italicized text).
-- Shouting/Loud: Use <b> tags (Bold text).
-- Safety Rule: NEVER include the phrase "haggis komment" or similar meta-comments.
-- For age_group choose ONE value from: 0-3, 4-6, 7+
-- For mood choose ONE value from: Könnyed, Kalandos, Komoly
+- Output MUST be a valid JSON object. No markdown code fences, no extra text.
+- Use HTML <p> tags for paragraphs inside "content".
+- Every story MUST have a high-quality 'scene_description' for image generation.
+- Synchron-Súgó: Every dialogue line MUST start with a character-emoji assigned to that specific character.
+- Whispering: <i> tags. Shouting: <b> tags.
+
+SEO Requirements:
+- seo_alt_text: A descriptive, accessible Hungarian description of the hero image.
+- seo_title: A catchy, SEO-friendly headline (max 60 chars).
+- seo_description: A compelling meta description for search results (max 155 chars).
 
 Output Format: Return ONLY a valid JSON object with these exact keys:
 {
-  "title": "Story Title in Hungarian",
-  "content": "<p>FULL complete HTML story content — all paragraphs, all scenes, nothing removed</p>",
-  "hero_image": "Single emoji representing the story",
+  "title": "Story Title",
+  "content": "<p>FULL HTML content</p>",
+  "hero_image": "Emoji",
   "reading_time": 5,
-  "question_1": "Discussion question 1 in Hungarian",
-  "question_2": "Discussion question 2 in Hungarian",
-  "question_3": "Discussion question 3 in Hungarian",
+  "question_1": "Question 1",
+  "question_2": "Question 2",
+  "question_3": "Question 3",
   "age_group": "4-6",
   "mood": "Kalandos",
-  "scene_description": "A vivid 2-3 sentence description of the most visually striking scene from this story — characters present, setting, action, magical elements, emotional mood.",
-  "tags": ["népmese", "Benedek Elek", "varázslat", "állatok", "bátorság"]
+  "scene_description": "Vivid 2-3 sentence description.",
+  "seo_alt_text": "Alt text for image",
+  "seo_title": "SEO Title",
+  "seo_description": "Meta description",
+  "tags": ["tag1", "tag2"]
 }
 """
     try:
@@ -192,14 +194,14 @@ Output Format: Return ONLY a valid JSON object with these exact keys:
             print("[!] Warning: scene_description missing from Claude response. Using title as fallback.")
             scene = data.get("title", "A magical fairy tale scene")
         image_prompt = (
-            "Square 1:1 ratio, no borders. "
             "A classic European folk-tale children's book illustration. "
             f"SCENE: {scene} "
             "STYLE & MOOD: 2D flat vector art mixed with subtle watercolor textures. "
             "Minimalist and atmospheric. Vintage storybook aesthetic. "
-            "Muted, rich color palette suitbale for dark mode. "
-            "Strong use of shadows, silhouettes, and soft moody lighting. 1:1 square ratio. "
-            "RESTRICTIONS: NO borders, NO 3D, NO Pixar, NO Disney style. "
+            "Muted, rich color palette suitable for dark mode and bedtime reading. "
+            "Strong use of shadows, silhouettes, and soft moody lighting. 3:4 ratio "
+            "RESTRICTIONS: NO 3D, NO CGI, NO Pixar, NO Disney style, NO frame, "
+            "no glossy plastic textures, no text, no hyperrealism, no decorative frame."
         )
 
         data["image_prompt"] = image_prompt
@@ -222,7 +224,7 @@ def generate_hero_image(prompt):
             model=GEMINI_IMAGE_MODEL,
             prompt=prompt,
             number_of_images=1,
-            aspect_ratio="1:1",
+            aspect_ratio="3:4",
         )
 
         if not result.generated_images:
@@ -619,7 +621,10 @@ function changeMeseTextSize(percent, btn) {
             "reading_time": story_data.get("reading_time", 5),
             "question_1": story_data.get("question_1", ""),
             "question_2": story_data.get("question_2", ""),
-            "question_3": story_data.get("question_3", "")
+            "question_3": story_data.get("question_3", ""),
+            "seo_alt_text": story_data.get("seo_alt_text", ""),
+            "seo_title": story_data.get("seo_title", ""),
+            "seo_description": story_data.get("seo_description", "")
         }
     }
     

@@ -202,7 +202,7 @@ export default function ReaderPage() {
                                 background: 'rgba(0,0,0,.48)', borderRadius: 20,
                                 padding: '3px 10px', fontSize: 11, color: 'rgba(255,255,255,.8)',
                                 backdropFilter: 'blur(4px)', pointerEvents: 'none',
-                            }}>🔍 dupla kattintás</div>
+                            }}>🔍</div>
                         </div>
                     </div>
                 )}

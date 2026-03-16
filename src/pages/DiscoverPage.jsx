@@ -1,9 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import StoryList from '../components/StoryList';
 import { useStories } from '../context/StoryContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function DiscoverPage() {
   const { stories, isLoading, error } = useStories();
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState('all');
 
@@ -18,17 +20,17 @@ export default function DiscoverPage() {
     });
   }, [searchQuery, selectedTag, stories]);
 
-  if (isLoading) return <div className="page-content fade-in" style={{ textAlign: 'center', paddingTop: '100px' }}>⏳ Keresés betöltése...</div>;
+  if (isLoading) return <div className="page-content fade-in" style={{ textAlign: 'center', paddingTop: '100px' }}>⏳ {t('searchLoading')}</div>;
   if (error) return <div className="page-content fade-in" style={{ textAlign: 'center', paddingTop: '100px' }}>⚠️ {error}</div>;
 
   return (
     <div className="page-content fade-in">
       <div className="discover-header">
-        <h1>Felfedezés</h1>
+        <h1>{t('discoverLabel')}</h1>
         <div className="search-bar">
           <input 
             type="text" 
-            placeholder="Mesék keresése..." 
+            placeholder={t('searchStories')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -42,7 +44,7 @@ export default function DiscoverPage() {
             className={`tag-chip ${selectedTag === tag ? 'active' : ''}`}
             onClick={() => setSelectedTag(tag)}
           >
-            {tag === 'all' ? 'Minden' : tag}
+            {tag === 'all' ? t('all') : tag}
           </button>
         ))}
       </div>
@@ -53,7 +55,7 @@ export default function DiscoverPage() {
         ) : (
           <div className="empty-state">
             <span className="empty-emoji">🤔</span>
-            <p>Nincs találat a keresésre.</p>
+            <p>{t('noResults')}</p>
           </div>
         )}
       </div>

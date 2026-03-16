@@ -7,6 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: 'auto',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
         name: 'mesenet.hu',
@@ -31,12 +32,17 @@ export default defineConfig({
         ]
       },
       workbox: {
-        cacheId: 'mesenet-pwa-v2-https', // Force service worker cache bust for HTTPS
-        cleanupOutdatedCaches: true, // Auto-remove old HTTP caches
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        // Ensure index.html fallback for client-side routing while offline
+        cacheId: 'mesenet-pwa-v3', // Changed ID to force bust
+        cleanupOutdatedCaches: true,
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,webmanifest}'],
         navigateFallback: '/index.html',
-        navigateFallbackAllowlist: [/^(?!\/__).*/]
+        navigateFallbackAllowlist: [/^(?!\/__).*/],
+        // Additional options to ensure sw.js generation
+        sourcemap: true
+      },
+      devOptions: {
+        enabled: false,
+        type: 'module'
       }
     })
   ],

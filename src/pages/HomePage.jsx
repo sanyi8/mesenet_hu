@@ -6,9 +6,11 @@ import MoralWeightFilter from '../components/MoralWeightFilter';
 import StoryCarousel from '../components/StoryCarousel';
 import StoryList from '../components/StoryList';
 import MerchBanner from '../components/MerchBanner';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function HomePage() {
     const { stories, isLoading, error } = useStories();
+    const { t } = useLanguage();
     const [filteredStories, setFilteredStories] = useState(null);
 
     // Provide immediate loading and error states to wait for API data
@@ -16,7 +18,7 @@ export default function HomePage() {
         return (
             <div className="fade-in" style={{ padding: '80px 20px', textAlign: 'center' }}>
                 <div style={{ fontSize: '3rem', animation: 'spin 2s linear infinite' }}>⏳</div>
-                <h2 style={{ marginTop: '20px' }}>Mesék betöltése...</h2>
+                <h2 style={{ marginTop: '20px' }}>{t('loadingStories')}</h2>
             </div>
         );
     }
@@ -25,7 +27,7 @@ export default function HomePage() {
         return (
             <div className="fade-in" style={{ padding: '80px 20px', textAlign: 'center' }}>
                 <div style={{ fontSize: '3rem' }}>⚠️</div>
-                <h2 style={{ marginTop: '20px' }}>A manóba, valami elromlott!</h2>
+                <h2 style={{ marginTop: '20px' }}>{t('somethingWentWrong')}</h2>
                 <p>{error}</p>
             </div>
         );
@@ -42,11 +44,11 @@ export default function HomePage() {
             <MoralWeightFilter onFilterChange={setFilteredStories} />
 
             {filteredStories ? (
-                <StoryList title="Ennek az estének a meséi" stories={filteredStories.slice(0, 5)} hideSeeAll={true} />
+                <StoryList title={t('tonightsStories')} stories={filteredStories.slice(0, 5)} hideSeeAll={true} />
             ) : (
                 <>
-                    <StoryCarousel title="✨ Nektek ajánljuk" stories={recommended} />
-                    <StoryCarousel title="🆕 Friss mesék" stories={fresh} isSmall={true} />
+                    <StoryCarousel title={t('recommendedForYou')} stories={recommended} />
+                    <StoryCarousel title={t('newStories')} stories={fresh} isSmall={true} />
                 </>
             )}
 

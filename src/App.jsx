@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { ReadingProvider } from './context/ReadingContext';
 import { StoryProvider } from './context/StoryContext';
+import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import Header from './components/Header';
 import TabBar from './components/TabBar';
 import HomePage from './pages/HomePage';
@@ -23,9 +24,10 @@ function PlaceholderPage({ emoji, title, desc }) {
 function AppContent() {
   const location = useLocation();
   const isReader = location.pathname.startsWith('/read/');
+  const { lang } = useLanguage();
 
   return (
-    <div className={isReader ? '' : 'app-shell'}>
+    <div className={isReader ? '' : 'app-shell'} key={lang}>
       {!isReader && <Header />}
       <Routes>
         <Route path="/" element={<HomePage />} />
@@ -42,13 +44,15 @@ function AppContent() {
 function App() {
   return (
     <ThemeProvider>
-      <StoryProvider>
-        <ReadingProvider>
-          <BrowserRouter>
-            <AppContent />
-          </BrowserRouter>
-        </ReadingProvider>
-      </StoryProvider>
+      <LanguageProvider>
+        <StoryProvider>
+          <ReadingProvider>
+            <BrowserRouter>
+              <AppContent />
+            </BrowserRouter>
+          </ReadingProvider>
+        </StoryProvider>
+      </LanguageProvider>
     </ThemeProvider>
   );
 }

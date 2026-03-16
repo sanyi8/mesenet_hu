@@ -5,6 +5,7 @@ import { useReading } from '../context/ReadingContext';
 import { useStories } from '../context/StoryContext';
 import DrawingCanvas from '../components/DrawingCanvas';
 import FeedbackModal from '../components/FeedbackModal';
+import { useLanguage } from '../context/LanguageContext';
 
 
 const QUESTION_EMOJIS = ['🫶', '🌱', '💡'];
@@ -15,6 +16,7 @@ export default function ReaderPage() {
     const { cycleTheme, themeIcon } = useTheme();
     const { updateProgress, markAsRead, rateStory, ratings, lastRead, saveDrawing, userDrawings } = useReading();
     const { stories, isLoading, error } = useStories();
+    const { t } = useLanguage();
 
 
     const story = stories.find((s) => s.id === parseInt(id));
@@ -125,14 +127,14 @@ export default function ReaderPage() {
     };
 
 
-    if (isLoading) return <div className="reader-shell fade-in" style={{ textAlign: 'center', paddingTop: 100 }}>⏳ Betöltés...</div>;
-    if (error) return <div className="reader-shell fade-in" style={{ textAlign: 'center', paddingTop: 100 }}>⚠️ Hiba: {error}</div>;
+    if (isLoading) return <div className="reader-shell fade-in" style={{ textAlign: 'center', paddingTop: 100 }}>⏳ {t('loading')}</div>;
+    if (error) return <div className="reader-shell fade-in" style={{ textAlign: 'center', paddingTop: 100 }}>⚠️ {t('error')}: {error}</div>;
     if (!story) return (
         <div className="reader-shell">
             <div className="placeholder-page">
                 <div className="placeholder-emoji">📖</div>
-                <div className="placeholder-title">Mese nem található</div>
-                <button className="next-story-btn" onClick={() => navigate('/')}>← Vissza a főoldalra</button>
+                <div className="placeholder-title">{t('storyNotFound')}</div>
+                <button className="next-story-btn" onClick={() => navigate('/')}>← {t('backToHome')}</button>
             </div>
         </div>
     );
@@ -143,22 +145,31 @@ export default function ReaderPage() {
     // Helper to strip redundant UI blocks that might be hardcoded in the content
     const cleanContent = (html) => {
         if (!html) return '';
-        // Remove known redundant blocks
+        // Remove known redundant blocks with a more aggressive approach
         const blocksToRemove = [
             /<div class=["']zoom-controls["']>.*?<\/div>/gs,
             /<div class=["']end-marker["']>.*?<\/div>/gs,
             /<div class=["']rating-card["']>.*?<\/div>/gs,
+            /<div class=["']rating-question["']>.*?<\/div>/gs,
+            /<div class=["']rating-buttons["']>.*?<\/div>/gs,
             /<div class=["']discussion-section["']>.*?<\/div>/gs,
             /<div class=["']share-section["']>.*?<\/div>/gs,
             /<div class=["']discussion-card["']>.*?<\/div>/gs,
+            /<div class=["']discussion-toggle["']>.*?<\/div>/gs,
+            /<div class=["']discussion-body["']>.*?<\/div>/gs,
             /<button class=["']next-story-btn["']>.*?<\/button>/gs,
-            /<div class=["']mese-accessibility-controls["']>.*?<\/div>/gs
+            /<div class=["']mese-accessibility-controls["']>.*?<\/div>/gs,
+            /<div class=["']text-size-bar["']>.*?<\/div>/gs,
+            /<p>~ Vége ~<\/p>/g,
+            /~ Vége ~/g
         ];
         let cleaned = html;
         blocksToRemove.forEach(regex => {
             cleaned = cleaned.replace(regex, '');
         });
-        return cleaned;
+        
+        // Final trim to remove any trailing whitespace or empty tags left behind
+        return cleaned.trim();
     };
 
     const contentHtml = cleanContent(story.content.includes('<p>') ? story.content : story.content.split('\n\n').map(p => `<p>${p}</p>`).join(''));
@@ -170,9 +181,9 @@ export default function ReaderPage() {
 
             {/* Reader Header */}
             <div className={`reader-header ${headerVisible ? '' : 'hidden'}`}>
-                <button className="reader-back-btn" onClick={(e) => { e.stopPropagation(); navigate('/'); }}>← Vissza</button>
+                <button className="reader-back-btn" onClick={(e) => { e.stopPropagation(); navigate('/'); }}>← {t('back')}</button>
                 <div className="reader-title">{story.title}</div>
-                <button className="icon-btn" onClick={(e) => { e.stopPropagation(); cycleTheme(); }} aria-label="Témaváltás">{themeIcon}</button>
+                <button className="icon-btn" onClick={(e) => { e.stopPropagation(); cycleTheme(); }} aria-label={t('themeToggle')}>{themeIcon}</button>
             </div>
 
             {/* Content */}
@@ -209,7 +220,7 @@ export default function ReaderPage() {
 
                 {/* End Block Container */}
                 <div className="end-block">
-                    <div className="end-marker">~ Vége ~</div>
+                    <div className="end-marker">{t('end')}</div>
 
                     {/* Native Text Size Controls (Moved here) */}
                     <div className="mese-accessibility-controls" style={{
@@ -237,7 +248,7 @@ export default function ReaderPage() {
 
                     {/* 1. Feedback UI (Tetszett a mese?) */}
                     <div className="rating-card">
-                        <div className="rating-question">Tetszett a mese?</div>
+                        <div className="rating-question">{t('didYouLike')}</div>
                         <div className="rating-buttons">
                             <button className={`rate-btn ${currentRating === 'up' ? 'selected-up' : ''}`} onClick={(e) => { e.stopPropagation(); handleRate('up'); }} id="rate-up">👍</button>
                             <button className={`rate-btn ${currentRating === 'down' ? 'selected-down' : ''}`} onClick={(e) => { e.stopPropagation(); handleRate('down'); }} id="rate-down">👎</button>
@@ -248,7 +259,7 @@ export default function ReaderPage() {
                     {story.discussionQuestions && story.discussionQuestions.length > 0 && (
                         <div className="discussion-card">
                             <button className="discussion-toggle" onClick={(e) => { e.stopPropagation(); setDiscussionOpen(!discussionOpen); }} id="discussion-toggle">
-                                <span>💬 Miről beszélgessünk?</span>
+                                <span>💬 {t('letsTalk')}</span>
                                 <span className={`discussion-arrow ${discussionOpen ? 'open' : ''}`}>▼</span>
                             </button>
                             <div className={`discussion-body ${discussionOpen ? 'open' : ''}`}>
@@ -266,7 +277,7 @@ export default function ReaderPage() {
                     <div className="share-section" style={{ marginBottom: '20px' }}>
                         <button className="next-story-btn" onClick={handleShare}
                             style={{ background: 'var(--discussion-bg)', color: 'var(--text-primary)', border: '1.5px solid var(--border)', boxShadow: 'none', width: '100%', justifyContent: 'center' }}>
-                            📤 Megosztás
+                            📤 {t('share')}
                         </button>
                     </div>
 
@@ -279,7 +290,7 @@ export default function ReaderPage() {
                             onClick={(e) => { e.stopPropagation(); setWorkshopOpen(!workshopOpen); }} 
                             style={{ color: '#ffd700' }}
                         >
-                            <span>🎨 Rajzolok egyet</span>
+                            <span>🎨 {t('illDraw')}</span>
                             <span className={`discussion-arrow ${workshopOpen ? 'open' : ''}`} style={{ color: '#ffd700' }}>▼</span>
                         </button>
                         
@@ -288,16 +299,16 @@ export default function ReaderPage() {
                                 <div style={{ padding: '10px 0 20px' }}>
                                     <div style={{ fontSize: '2.5rem', marginBottom: '10px' }}>🎨</div>
                                     <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: 1.6 }}>
-                                        Rajzold le, mi tetszett a legjobban a mesében, tölts fel egy fotót, és a <strong style={{color:'#ffd700'}}>Mesegép</strong> jövő héten életre kelti!
+                                        {t('drawPrompt')}
                                     </p>
                                     <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
                                         <button className="mese-btn" onClick={(e) => { e.stopPropagation(); setIsDrawingMode(true); }}
                                             style={{ background: 'linear-gradient(135deg,#ffd700,#ffaa00)', color: '#1a1a2e', border: 'none', padding: '10px 20px', borderRadius: '50px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(255,200,0,0.3)' }}>
-                                            ✏️ Rajzolok egyet
+                                            ✏️ {t('drawButton')}
                                         </button>
                                         <button className="mese-btn" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
                                             style={{ background: 'rgba(255,255,255,0.08)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', padding: '10px 20px', borderRadius: '50px', fontWeight: 600, cursor: 'pointer' }}>
-                                            📸 Fotó feltöltése
+                                            📸 {t('uploadButton')}
                                         </button>
                                     </div>
                                     <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
@@ -309,7 +320,7 @@ export default function ReaderPage() {
                                         </div>
                                     )}
                                     {uploadedFile && (
-                                        <p style={{ color: '#ffd700', fontSize: '0.8rem', marginTop: '1rem' }}>✅ <strong>{uploadedFile.name}</strong> — elmentve!</p>
+                                        <p style={{ color: '#ffd700', fontSize: '0.8rem', marginTop: '1rem' }}>✅ <strong>{uploadedFile.name}</strong> — {t('saved')}</p>
                                     )}
                                 </div>
                             ) : (
@@ -323,7 +334,7 @@ export default function ReaderPage() {
                     {/* 5. Next story Button */}
                     <button className="next-story-btn" id="next-story-btn"
                         onClick={(e) => { e.stopPropagation(); navigate(`/read/${nextStory.id}`); window.scrollTo(0, 0); }}>
-                        → Következő mese
+                        → {t('nextStory')}
                     </button>
                 </div>
 

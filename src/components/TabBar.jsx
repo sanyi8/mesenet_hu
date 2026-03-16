@@ -1,14 +1,16 @@
 import { NavLink, useLocation } from 'react-router-dom';
-
-const tabs = [
-    { to: '/', icon: '🏠', label: 'Főoldal' },
-    { to: '/discover', icon: '🔍', label: 'Felfedezés' },
-    { to: '/log', icon: '📖', label: 'Napló' },
-    { to: '/profile', icon: '👤', label: 'Profil' },
-];
+import { useLanguage } from '../context/LanguageContext';
 
 export default function TabBar() {
     const location = useLocation();
+    const { t } = useLanguage();
+
+    const tabs = [
+        { to: '/', icon: '🏠', label: t('home') },
+        { to: '/discover', icon: '🔍', label: t('discover') },
+        { to: '/log', icon: '📖', label: t('log') },
+        { to: '/profile', icon: '👤', label: t('profile') },
+    ];
 
     // Hide tab bar on reader pages
     if (location.pathname.startsWith('/read/')) return null;

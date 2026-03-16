@@ -7,7 +7,7 @@ try:
 except ImportError:
     repair_json = lambda x: x
 
-load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
 
 # Configuration
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")

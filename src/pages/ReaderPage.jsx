@@ -26,7 +26,6 @@ export default function ReaderPage() {
     const [headerVisible, setHeaderVisible] = useState(true);
     const [discussionOpen, setDiscussionOpen] = useState(false);
     const [currentRating, setCurrentRating] = useState(ratings[id] || null);
-    const [lightboxOpen, setLightboxOpen] = useState(false);
     const [uploadedFile, setUploadedFile] = useState(null);
     const [isDrawingMode, setIsDrawingMode] = useState(false);
     
@@ -36,8 +35,6 @@ export default function ReaderPage() {
     const [workshopOpen, setWorkshopOpen] = useState(false);
     const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
     const [textSize, setTextSize] = useState(100);
-    const [zoomHintUrl, setZoomHintUrl] = useState(null);
-    const [lightboxImg, setLightboxImg] = useState(null);
 
 
 
@@ -53,12 +50,6 @@ export default function ReaderPage() {
         }
     }, [id, lastRead]);
 
-    // Close lightbox on Escape
-    useEffect(() => {
-        const onKey = (e) => { if (e.key === 'Escape') setLightboxOpen(false); };
-        window.addEventListener('keydown', onKey);
-        return () => window.removeEventListener('keydown', onKey);
-    }, []);
 
     // Track scroll
     const handleScroll = useCallback(() => {
@@ -85,37 +76,6 @@ export default function ReaderPage() {
     // Mark as read
     useEffect(() => { if (scrollPercent >= 95) markAsRead(parseInt(id)); }, [scrollPercent, id, markAsRead]);
 
-    // Lightbox & Hint delegation for content images
-    useEffect(() => {
-        if (!contentRef.current) return;
-        const images = contentRef.current.querySelectorAll('.mese-body img');
-        
-        const handleImgClick = (e) => {
-            const imgUrl = e.target.src;
-            setZoomHintUrl(imgUrl);
-            setTimeout(() => setZoomHintUrl(prev => prev === imgUrl ? null : prev), 3000);
-        };
-
-        const handleImgDblClick = (e) => {
-            e.stopPropagation();
-            setLightboxImg(e.target.src);
-            setLightboxOpen(true);
-        };
-
-        images.forEach(img => {
-            img.addEventListener('click', handleImgClick);
-            img.addEventListener('dblclick', handleImgDblClick);
-            img.style.cursor = 'zoom-in';
-            // Wrap in container if not already? (Optional, but let's stick to attributes for now)
-        });
-
-        return () => {
-            images.forEach(img => {
-                img.removeEventListener('click', handleImgClick);
-                img.removeEventListener('dblclick', handleImgDblClick);
-            });
-        };
-    }, [story, isLoading]);
 
     const handleContentClick = (e) => {
         setHeaderVisible(true);
@@ -177,28 +137,35 @@ export default function ReaderPage() {
         </div>
     );
 
-    const contentHtml = story.content.includes('<p>') ? story.content : story.content.split('\n\n').map(p => `<p>${p}</p>`).join('');
     const nextStory = getNextStory();
     const heroImg = story.featuredImage;
+
+    // Helper to strip redundant UI blocks that might be hardcoded in the content
+    const cleanContent = (html) => {
+        if (!html) return '';
+        // Remove known redundant blocks
+        const blocksToRemove = [
+            /<div class=["']zoom-controls["']>.*?<\/div>/gs,
+            /<div class=["']end-marker["']>.*?<\/div>/gs,
+            /<div class=["']rating-card["']>.*?<\/div>/gs,
+            /<div class=["']discussion-section["']>.*?<\/div>/gs,
+            /<div class=["']share-section["']>.*?<\/div>/gs,
+            /<div class=["']discussion-card["']>.*?<\/div>/gs,
+            /<button class=["']next-story-btn["']>.*?<\/button>/gs,
+            /<div class=["']mese-accessibility-controls["']>.*?<\/div>/gs
+        ];
+        let cleaned = html;
+        blocksToRemove.forEach(regex => {
+            cleaned = cleaned.replace(regex, '');
+        });
+        return cleaned;
+    };
+
+    const contentHtml = cleanContent(story.content.includes('<p>') ? story.content : story.content.split('\n\n').map(p => `<p>${p}</p>`).join(''));
 
     return (
         <div className="reader-shell" onClick={handleContentClick}>
 
-            {/* ── Lightbox Overlay ── */}
-            {lightboxOpen && (heroImg || lightboxImg) && (
-                <div
-                    onClick={() => { setLightboxOpen(false); setLightboxImg(null); }}
-                    style={{
-                        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.93)',
-                        zIndex: 99999, display: 'flex', alignItems: 'center',
-                        justifyContent: 'center', cursor: 'zoom-out',
-                        animation: 'meseFadeIn .22s ease',
-                    }}
-                >
-                    <img src={lightboxImg || heroImg} alt={story.title} style={{ maxWidth: '92vw', maxHeight: '92vh', objectFit: 'contain', borderRadius: 10 }} />
-                    <div style={{ position: 'absolute', top: 16, right: 20, color: 'rgba(255,255,255,.6)', fontSize: 28, cursor: 'pointer' }}>✕</div>
-                </div>
-            )}
 
 
             {/* Reader Header */}
@@ -211,23 +178,15 @@ export default function ReaderPage() {
             {/* Content */}
             <div className="reader-content" ref={contentRef}>
 
-                {/* Hero Image — double-click to open lightbox */}
+                {/* Hero Image */}
                 {heroImg && (
-                    <div className="story-image-container fade-in" style={{ cursor: 'zoom-in' }}>
+                    <div className="story-image-container fade-in">
                         <div className="story-image-mock" style={{ padding: 0, overflow: 'hidden', background: 'transparent', border: 'none', position: 'relative' }}>
                             <img
                                 src={heroImg}
                                 alt={story.title}
                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                onDoubleClick={(e) => { e.stopPropagation(); setLightboxOpen(true); }}
-                                title="Dupla kattintás a nagyításhoz"
                             />
-                            <div style={{
-                                position: 'absolute', bottom: 8, right: 10,
-                                background: 'rgba(0,0,0,.48)', borderRadius: 20,
-                                padding: '3px 10px', fontSize: 11, color: 'rgba(255,255,255,.8)',
-                                backdropFilter: 'blur(4px)', pointerEvents: 'none',
-                            }}>🔍</div>
                         </div>
                     </div>
                 )}
@@ -244,48 +203,37 @@ export default function ReaderPage() {
                     ref={contentRef}
                 >
                     <div dangerouslySetInnerHTML={{ __html: contentHtml }} />
-                    
-                    {/* Floating Zoom Hint for content images */}
-                    {zoomHintUrl && (
-                        <div style={{
-                            position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)',
-                            background: 'rgba(0,0,0,0.7)', color: 'white', padding: '8px 16px',
-                            borderRadius: '20px', fontSize: '13px', zIndex: 1000,
-                            pointerEvents: 'none', animation: 'meseFadeIn 0.3s ease'
-                        }}>
-                           🔍 Dupla kattintás a nagyításhoz
-                        </div>
-                    )}
                 </div>
 
-                {/* Native Text Size Controls */}
-                <div className="mese-accessibility-controls" style={{
-                    margin: '1.5em 0', display: 'flex', alignItems: 'center', gap: '12px',
-                    padding: '12px 16px', background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid var(--border)', borderRadius: '12px', justifyContent: 'center'
-                }}>
-                    <span style={{ fontSize: '1.2em', opacity: 0.7 }}>🔍</span>
-                    {[100, 125, 150].map(size => (
-                        <button 
-                            key={size}
-                            className={`text-size-btn ${textSize === size ? 'active' : ''}`}
-                            onClick={() => setTextSize(size)}
-                            style={{
-                                background: textSize === size ? 'rgba(255,215,0,0.1)' : 'rgba(255,255,255,0.05)',
-                                border: '1px solid ' + (textSize === size ? '#ffd700' : 'rgba(255,255,255,0.1)'),
-                                color: textSize === size ? '#ffd700' : 'inherit',
-                                padding: '4px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85em'
-                            }}
-                        >
-                            {size}%
-                        </button>
-                    ))}
-                </div>
 
 
                 {/* End Block Container */}
                 <div className="end-block">
                     <div className="end-marker">~ Vége ~</div>
+
+                    {/* Native Text Size Controls (Moved here) */}
+                    <div className="mese-accessibility-controls" style={{
+                        margin: '1.5em 0', display: 'flex', alignItems: 'center', gap: '12px',
+                        padding: '12px 16px', background: 'rgba(255,255,255,0.03)',
+                        border: '1px solid var(--border)', borderRadius: '12px', justifyContent: 'center'
+                    }}>
+                        <span style={{ fontSize: '1.2em', opacity: 0.7 }}>🔍</span>
+                        {[100, 125, 150].map(size => (
+                            <button 
+                                key={size}
+                                className={`text-size-btn ${textSize === size ? 'active' : ''}`}
+                                onClick={() => setTextSize(size)}
+                                style={{
+                                    background: textSize === size ? 'rgba(255,215,0,0.1)' : 'rgba(255,255,255,0.05)',
+                                    border: '1px solid ' + (textSize === size ? '#ffd700' : 'rgba(255,255,255,0.1)'),
+                                    color: textSize === size ? '#ffd700' : 'inherit',
+                                    padding: '4px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85em'
+                                }}
+                            >
+                                {size}%
+                            </button>
+                        ))}
+                    </div>
 
                     {/* 1. Feedback UI (Tetszett a mese?) */}
                     <div className="rating-card">
@@ -297,20 +245,22 @@ export default function ReaderPage() {
                     </div>
 
                     {/* 2. Questions Accordion (Miről beszélgessünk?) */}
-                    <div className="discussion-card">
-                        <button className="discussion-toggle" onClick={(e) => { e.stopPropagation(); setDiscussionOpen(!discussionOpen); }} id="discussion-toggle">
-                            <span>💬 Miről beszélgessünk?</span>
-                            <span className={`discussion-arrow ${discussionOpen ? 'open' : ''}`}>▼</span>
-                        </button>
-                        <div className={`discussion-body ${discussionOpen ? 'open' : ''}`}>
-                            {story.discussionQuestions && story.discussionQuestions.map((q, i) => (
-                                <div key={i} className="discussion-question">
-                                    <span className="discussion-question-emoji">{QUESTION_EMOJIS[i] || '💬'}</span>
-                                    <span>„{q}"</span>
-                                </div>
-                            ))}
+                    {story.discussionQuestions && story.discussionQuestions.length > 0 && (
+                        <div className="discussion-card">
+                            <button className="discussion-toggle" onClick={(e) => { e.stopPropagation(); setDiscussionOpen(!discussionOpen); }} id="discussion-toggle">
+                                <span>💬 Miről beszélgessünk?</span>
+                                <span className={`discussion-arrow ${discussionOpen ? 'open' : ''}`}>▼</span>
+                            </button>
+                            <div className={`discussion-body ${discussionOpen ? 'open' : ''}`}>
+                                {story.discussionQuestions.map((q, i) => (
+                                    <div key={i} className="discussion-question">
+                                        <span className="discussion-question-emoji">{QUESTION_EMOJIS[i] || '💬'}</span>
+                                        <span>„{q}"</span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* 3. Share Section (Megosztás) */}
                     <div className="share-section" style={{ marginBottom: '20px' }}>

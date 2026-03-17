@@ -294,9 +294,9 @@ export default function ReaderPage() {
                             <span>🎨 {t('illDraw')}</span>
                             <span className={`discussion-arrow ${workshopOpen ? 'open' : ''}`} style={{ color: '#ffd700' }}>▼</span>
                         </button>
-                        <div className={`accordion-body ${workshopOpen ? 'open' : ''}`} style={{ textAlign: 'center' }}>
+                        <div className={`accordion-body ${workshopOpen ? 'open' : ''}`}>
                             {!isDrawingMode ? (
-                                <div style={{ padding: '10px 0 20px' }}>
+                                <div className="workshop-content" style={{ padding: '10px 0 20px', textAlign: 'center' }}>
                                     <div style={{ fontSize: '2.5rem', marginBottom: '10px' }}>🎨</div>
                                     <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.9rem', marginBottom: '1.5rem', lineHeight: 1.6 }}>{t('drawPrompt')}</p>
                                     <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>

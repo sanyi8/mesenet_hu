@@ -1,6 +1,8 @@
 import { useRef, useState, useEffect } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function DrawingCanvas({ onSave, onCancel }) {
+    const { t } = useLanguage();
     const canvasRef = useRef(null);
     const contextRef = useRef(null);
     const [isDrawing, setIsDrawing] = useState(false);

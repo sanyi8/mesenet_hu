@@ -646,22 +646,50 @@ img {
   transform: scale(1.15); 
 }
 
+.mese-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 30px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: pointer;
+  border: none;
+}
+
+.mese-btn:active {
+  transform: scale(0.95);
+}
+
 .workshop-card { 
   background: linear-gradient(135deg, #1A1A2E 0%, #242442 100%) !important; 
-  border: 1.5px solid rgba(187, 134, 252, 0.3) !important; 
+  border: 1.5px solid rgba(187, 134, 252, 0.2) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
 }
 
 .drawing-main-btn { 
   background: linear-gradient(135deg, #FFD700, #FFAA00) !important; 
   color: #1A1A2E !important; 
-  font-weight: 800 !important; 
   box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+}
+
+.drawing-main-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
 }
 
 .upload-btn { 
   background: rgba(255, 255, 255, 0.08) !important; 
-  color: white !important; 
-  border: 1px solid rgba(255, 255, 255, 0.2) !important; 
+  color: #FFFFFF !important; 
+  border: 1.5px solid rgba(255, 255, 255, 0.15) !important; 
+}
+
+.upload-btn:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
 }
 
 .story-image-mock { 

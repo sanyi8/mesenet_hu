@@ -1,11 +1,12 @@
 import { useNavigate } from 'react-router-dom';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
 const WEIGHT_ICONS = { 1: '😴', 2: '🤔', 3: '📚' };
 
 export default function StoryCarousel({ title, stories, isSmall = false, icon = null }) {
     const navigate = useNavigate();
     const scrollRef = useRef(null);
+    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
     const scroll = (direction) => {
         if (scrollRef.current) {
@@ -14,6 +15,20 @@ export default function StoryCarousel({ title, stories, isSmall = false, icon = 
                 left: direction === 'left' ? -scrollAmount : scrollAmount,
                 behavior: 'smooth'
             });
+        }
+    };
+
+    const handleMouseDown = (e) => {
+        setDragStart({ x: e.clientX, y: e.clientY });
+    };
+
+    const handleMouseUp = (e, storyId) => {
+        const deltaX = Math.abs(e.clientX - dragStart.x);
+        const deltaY = Math.abs(e.clientY - dragStart.y);
+        
+        // 10px threshold for drag vs click
+        if (deltaX < 10 && deltaY < 10) {
+            navigate(`/read/${storyId}`);
         }
     };
 
@@ -31,12 +46,13 @@ export default function StoryCarousel({ title, stories, isSmall = false, icon = 
                         <div
                             key={story.id}
                             className="story-card"
-                            onClick={() => navigate(`/read/${story.id}`)}
+                            onMouseDown={handleMouseDown}
+                            onMouseUp={(e) => handleMouseUp(e, story.id)}
                             id={`story-card-${story.id}`}
                         >
                             <div className={`story-card-cover ${isSmall ? 'small-cover' : ''}`} style={story.featuredImage ? { background: 'transparent' } : {}}>
                                 {story.featuredImage ? (
-                                    <img src={story.featuredImage} alt={story.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    <img src={story.featuredImage} alt={story.title} style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} />
                                 ) : (
                                     story.coverEmoji
                                 )}

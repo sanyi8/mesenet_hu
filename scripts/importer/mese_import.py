@@ -10,13 +10,13 @@ except ImportError:
 load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
 
 # Configuration
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_IMAGE_MODEL = os.getenv("GEMINI_IMAGE_MODEL", "imagen-3.0-generate-001")
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-CLAUDE_MODEL_NAME = os.getenv("CLAUDE_MODEL_NAME", "claude-sonnet-4-6")
-WP_BASE_URL = os.getenv("WP_BASE_URL", "").rstrip("/")
-WP_USERNAME = os.getenv("WP_USERNAME")
-WP_APP_PASSWORD = os.getenv("WP_APP_PASSWORD")
+GEMINI_API_KEY      = os.getenv("GEMINI_API_KEY")
+GEMINI_IMAGE_MODEL  = os.getenv("GEMINI_IMAGE_MODEL", "imagen-3.0-generate-001")
+ANTHROPIC_API_KEY   = os.getenv("ANTHROPIC_API_KEY")
+CLAUDE_MODEL_NAME   = os.getenv("CLAUDE_MODEL_NAME", "claude-sonnet-4-6")
+WP_BASE_URL         = os.getenv("WP_BASE_URL", "").rstrip("/")
+WP_USERNAME         = os.getenv("WP_USERNAME")
+WP_APP_PASSWORD     = os.getenv("WP_APP_PASSWORD")
 
 if sys.stdout.encoding and sys.stdout.encoding.lower() != 'utf-8':
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
@@ -40,7 +40,6 @@ def check_duplicate(slug):
         print(f"[!] Duplicate Alert: '{slug}' already exists."); sys.exit(0)
 
 def build_image_prompt(scene, title):
-    """STANDALONE IMAGE PROMPT GENERATOR — 3:4 RATIO ENFORCED"""
     return (
         "A classic European folk-tale children's book illustration. "
         f"SCENE: {scene if scene else title} "
@@ -61,12 +60,24 @@ def generate_story(raw):
     with open(prompt_path, "r", encoding="utf-8") as f:
         instruction = f.read()
 
+    # Extra enforcement on top of prompt.txt
+    enforcement = (
+        "KRITIKUS SZABÁLY: A szöveget SZÓRÓL SZÓRA meg kell tartani. "
+        "TILOS összefoglalni, rövidíteni, vagy bármilyen mondatot kihagyni. "
+        "Csak a Synchron-Súgó emoji dialógus formázást add hozzá. "
+        "A JSON content mezőjében az ÖSSZES bekezdés szerepeljen <p> tagekben. "
+        "Ha a forrásszövegben 20 bekezdés van, a content-ben is 20 <p> tag legyen."
+    )
+
     try:
         message = client_claude.messages.create(
             model=CLAUDE_MODEL_NAME,
-            max_tokens=8000,
+            max_tokens=16000,
             system=instruction,
-            messages=[{"role": "user", "content": f"Transform this text into the requested JSON story format. Keep EVERY word of the original narrative.\n\n{raw}"}]
+            messages=[{
+                "role": "user",
+                "content": f"{enforcement}\n\nForrásszöveg (minden szót meg kell tartani):\n\n{raw}"
+            }]
         )
 
         result_text = next((b.text for b in message.content if b.type == "text"), "")
@@ -89,7 +100,7 @@ def generate_story(raw):
     return data
 
 def generate_hero_image(prompt):
-    print("[*] Generating Visual Asset (Explicit 3:4 Ratio)...")
+    print("[*] Generating Visual Asset (3:4 Ratio)...")
     try:
         from google import genai as google_genai
         from google.genai import types
@@ -107,17 +118,51 @@ def generate_hero_image(prompt):
     except Exception as e:
         print(f"[!] Image Error: {e}"); return None
 
-def upload_media(img, slug):
-    if not img: return None
-    print("[*] Uploading Asset to WordPress...")
+def upload_media(img, slug, alt_text="", title_text="", description=""):
+    """Upload image to WP and set all meta fields."""
+    if not img:
+        print("[!] No image — skipping media upload.")
+        return None
+
+    print("[*] Uploading image to WordPress...")
     try:
         b = img.image.image_bytes if hasattr(img, 'image') and hasattr(img.image, 'image_bytes') else None
         if not b:
             o = io.BytesIO(); img.image.save(o, format='PNG'); b = o.getvalue()
-        r = requests.post(f"{WP_BASE_URL}/wp-json/wp/v2/media", data=b, auth=(WP_USERNAME, WP_APP_PASSWORD),
-                         headers={'Content-Disposition': f'attachment; filename={slug}.png', 'Content-Type': 'image/png'})
-        return r.json()['id']
-    except: return None
+
+        # 1. Upload the file
+        r = requests.post(
+            f"{WP_BASE_URL}/wp-json/wp/v2/media",
+            data=b,
+            auth=(WP_USERNAME, WP_APP_PASSWORD),
+            headers={
+                'Content-Disposition': f'attachment; filename={slug}.png',
+                'Content-Type': 'image/png'
+            }
+        )
+        r.raise_for_status()
+        media_id = r.json()['id']
+        print(f"[+] Image uploaded — ID: {media_id}")
+
+        # 2. Update alt text, title, description
+        meta = {}
+        if alt_text:   meta["alt_text"]    = alt_text
+        if title_text: meta["title"]       = title_text
+        if description:meta["description"] = description
+
+        if meta:
+            requests.post(
+                f"{WP_BASE_URL}/wp-json/wp/v2/media/{media_id}",
+                json=meta,
+                auth=(WP_USERNAME, WP_APP_PASSWORD)
+            )
+            print(f"[+] Image meta updated (alt, title, description)")
+
+        return media_id
+
+    except Exception as e:
+        print(f"[!] Upload Error: {e}")
+        return None
 
 def get_term(tax, val):
     try:
@@ -137,27 +182,37 @@ def get_tags(tags):
         except: pass
     return ids
 
-def upload_to_wp(data, mid=None, update_id=None):
+def upload_to_wp(data, mid=None, update_id=None, source_url=None):
     print("[*] CMS Layer Synchronization...")
     content = f"<div class='mese-body'>{data.get('content')}</div>"
     if data.get("image_prompt"):
         content += f"\n<div id='mese-hidden-image-prompt' style='display: none;'>{data['image_prompt']}</div>"
 
     payload = {
-        "title": data.get("title"), "content": content, "status": "draft",
+        "title":   data.get("title"),
+        "content": content,
+        "status":  "draft",
         "acf": {
-            "hero_image": data.get("hero_image"), "reading_time": data.get("reading_time"),
-            "question_1": data.get("question_1"), "question_2": data.get("question_2"), "question_3": data.get("question_3"),
-            "seo_alt_text": data.get("seo_alt_text"), "seo_title": data.get("seo_title"), "seo_description": data.get("seo_description")
+            "hero_image":      data.get("hero_image"),
+            "reading_time":    data.get("reading_time"),
+            "question_1":      data.get("question_1"),
+            "question_2":      data.get("question_2"),
+            "question_3":      data.get("question_3"),
+            "seo_alt_text":    data.get("seo_alt_text"),
+            "seo_title":       data.get("seo_title"),
+            "seo_description": data.get("seo_description"),
+            "source_url":      source_url,
         }
     }
+
     if mid: payload["featured_media"] = mid
-    age = get_term("age_group", data.get("age_group"))
-    mood = get_term("mood", data.get("mood"))
+
+    age  = get_term("age_group", data.get("age_group"))
+    mood = get_term("mood",      data.get("mood"))
     tags = get_tags(data.get("tags", []))
-    if age: payload["age_group"] = [age]
-    if mood: payload["mood"] = [mood]
-    if tags: payload["story_tag"] = tags
+    if age:  payload["age_group"]  = [age]
+    if mood: payload["mood"]       = [mood]
+    if tags: payload["story_tag"]  = tags
 
     url = f"{WP_BASE_URL}/wp-json/wp/v2/mese"
     if update_id:
@@ -166,7 +221,8 @@ def upload_to_wp(data, mid=None, update_id=None):
 
     r = requests.post(url, json=payload, auth=(WP_USERNAME, WP_APP_PASSWORD))
     r.raise_for_status()
-    print(f"[+] Story live: {WP_BASE_URL}/wp-admin/post.php?post={r.json()['id']}&action=edit")
+    post_id = r.json()['id']
+    print(f"[+] Draft saved: {WP_BASE_URL}/wp-admin/post.php?post={post_id}&action=edit")
 
 def main():
     p = argparse.ArgumentParser()
@@ -181,7 +237,16 @@ def main():
         check_duplicate(slug)
 
     data = generate_story(raw)
-    mid = upload_media(generate_hero_image(data["image_prompt"]), slug)
-    upload_to_wp(data, mid, update_id=a.id)
+
+    # Pass SEO alt text and title to image upload
+    mid = upload_media(
+        generate_hero_image(data["image_prompt"]),
+        slug,
+        alt_text    = data.get("seo_alt_text", ""),
+        title_text  = data.get("title", ""),
+        description = data.get("seo_description", "")
+    )
+
+    upload_to_wp(data, mid, update_id=a.id, source_url=a.url)
 
 if __name__ == "__main__": main()

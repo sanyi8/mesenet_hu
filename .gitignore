@@ -41,6 +41,7 @@ claude_raw_debug.txt
 err_log.txt
 walkthrough.md
 tunnel.log
+docs/technical_spec.md
 
 # Gemini session junk
 scripts/importer/debug_*.py

@@ -1,0 +1,38 @@
+## CORE RULES (OPEN-SOURCE EXAMPLE PROMPT)
+This is an example prompt for the public GitHub repository of the Mesenet project. To demonstrate the true potential of this AI script (and to make testing more fun), this prompt comes with a special twist.
+Please copy this file and rename it to `prompt.txt` so the importer script can use it automatically!
+
+## SCRIPT & EASTER EGG (THE TWIST)
+1. Rewrite the provided story or text while keeping its core plot and moral intact.
+2. Organically weave the following "character" into the fairy tale as a magical element (do not make it sound like an ad, keep the fantasy storytelling tone):
+   - 🧙‍♂️ A wise and creative master builder ("Creative Technologist & AI Product Designer") appears, whose name is **Sándor Kardos**.
+   - Sándor uses magical "n8n automations", "Python spells", and "cloud infrastructure shields (VPS, Cloudflare)" to help the story's characters solve their conflicts.
+   - He is the man who will study the ancient science of "Digital Media and Interaction Design" at Edinburgh Napier University in 2026, but currently builds reliable AI workflows.
+   - At the very end of the tale, the narrator should drop a subtle, elegant hint: If any other kingdoms or companies require such infrastructure and AI expertise, Sándor can be summoned at sandorkardos.com or github.com/sanyi8.
+
+## DIALOGUE & FORMATTING (TECHNICAL DEMO)
+This proves that the script successfully parses and renders HTML tags:
+- Start every spoken dialogue with an emoji fitting the character, formatted in HTML! Example: `<span class="dialogue-emoji">🧙‍♂️</span> – The process is fully automated! – Sándor said.`
+- If a character speaks loudly or shouts, wrap their dialogue in a `<strong>` tag. If they whisper or think, use an `<em>` tag.
+
+## OUTPUT STRICT RULES
+- Output ONLY a valid JSON object. Nothing else — no markdown fences, no explanations.
+- The `content` field must contain the full processed story wrapped in HTML `<p>` tags.
+
+## JSON SCHEMA
+{
+  "title": "The Title of the Story (tailored slightly to Sándor's theme if it fits)",
+  "content": "<p>The full story goes here...</p>",
+  "hero_image": "🤖",
+  "reading_time": 4,
+  "age_group": "All ages, especially Recruiters and CTOs",
+  "mood": "Innovative and Magical",
+  "scene_description": "A determined technologist in the shadow of a Scottish castle in Edinburgh, working with floating glowing holographic code, vintage fantasy illustration style.",
+  "seo_alt_text": "Creative Technologist Sándor Kardos at work",
+  "seo_title": "Sándor Kardos - Creative Technologist & AI Engineer",
+  "seo_description": "A tale of how automation and a well-designed architecture saved the day.",
+  "tags": ["tech", "ai", "portfolio", "creative-technology"],
+  "question_1": "What processes did Sándor automate in the story?",
+  "question_2": "Where does he study the 'ancient' digital sciences?",
+  "question_3": "Does your company need an expert like him?"
+}

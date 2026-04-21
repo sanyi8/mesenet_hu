@@ -51,6 +51,19 @@ def normalize_mood(val):
     if any(k in v for k in ("komoly", "serious", "tanulság", "mély")): return "Komoly"
     return "Könnyed"  # default: lightest option
 
+def normalize_collection(val):
+    """Map any collection string to predefined collections"""
+    if not val: return "Modern Mese"
+    val = str(val).strip()
+    valid = ["Benedek Elek", "Grimm", "La Fontaine", "Magyar Népmese", "Modern Mese"]
+    if val in valid: return val
+    v = val.lower()
+    if "benedek" in v: return "Benedek Elek"
+    if "grimm" in v: return "Grimm"
+    if "fontaine" in v: return "La Fontaine"
+    if "népmese" in v or "nepmese" in v: return "Magyar Népmese"
+    return "Modern Mese"
+
 BOILERPLATE_PHRASES = [
     "A Mesebázis azzal a céllal jött létre",
     "Mesebázis.com",
@@ -279,9 +292,12 @@ def upload_to_wp(data, mid=None, update_id=None, source_url=None):
 
     age  = get_term("age_group", normalize_age_group(data.get("age_group")), auto_create=True)
     mood = get_term("mood",      normalize_mood(data.get("mood")),           auto_create=True)
+    coll = get_term("collection",normalize_collection(data.get("collection")),auto_create=True)
     tags = get_tags(data.get("tags", []))
+    
     if age:  payload["age_group"]  = [age]
     if mood: payload["mood"]       = [mood]
+    if coll: payload["collection"] = [coll]
     if tags: payload["story_tag"]  = tags
 
     url = f"{WP_BASE_URL}/wp-json/wp/v2/mese"

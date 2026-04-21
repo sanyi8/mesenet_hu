@@ -26,12 +26,49 @@ client_claude = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY, timeout=600.0) if
 def slugify(t):
     return re.sub(r'[^a-z0-9]+', '-', t.lower()).strip('-')
 
+def normalize_age_group(val):
+    """Map any age range string to one of: 0-3, 4-6, 7+"""
+    if not val: return "4-6"
+    val = str(val).strip()
+    if val in ("0-3", "4-6", "7+"): return val
+    # Try to extract leading number
+    m = re.match(r'(\d+)', val)
+    if m:
+        n = int(m.group(1))
+        if n <= 3: return "0-3"
+        if n <= 6: return "4-6"
+        return "7+"
+    return "4-6"  # safe default
+
+def normalize_mood(val):
+    """Map any mood string to one of: Könnyed, Kalandos, Komoly"""
+    if not val: return "Könnyed"
+    val = str(val).strip()
+    if val in ("Könnyed", "Kalandos", "Komoly"): return val
+    # Keyword matching fallback
+    v = val.lower()
+    if any(k in v for k in ("kaland", "izgalm", "action", "adventure")): return "Kalandos"
+    if any(k in v for k in ("komoly", "serious", "tanulság", "mély")): return "Komoly"
+    return "Könnyed"  # default: lightest option
+
+BOILERPLATE_PHRASES = [
+    "A Mesebázis azzal a céllal jött létre",
+    "Mesebázis.com",
+    "mesebazis.com",
+    "Minden jog fenntartva",
+    "oldalt megosztani",
+]
+
 def scrape_url(url):
     print(f"[*] Scraping Content: {url}")
     r = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=15)
     soup = BeautifulSoup(r.content, 'html.parser')
     title = soup.title.string if soup.title else (soup.h1.text if soup.h1 else "Mese")
-    text = "\n\n".join([p.get_text() for p in soup.find_all('p')])
+    paragraphs = [
+        p.get_text() for p in soup.find_all('p')
+        if not any(phrase in p.get_text() for phrase in BOILERPLATE_PHRASES)
+    ]
+    text = "\n\n".join(paragraphs)
     return title.strip(), text.strip()
 
 def check_duplicate(slug):
@@ -46,8 +83,10 @@ def build_image_prompt(scene, title):
             base_prompt = f.read()
     except FileNotFoundError:
         base_prompt = "A vintage fairy-tale illustration. SCENE: {scene}"
-        
-    return base_prompt.replace("{scene}", scene if scene else title)
+
+    # scene_description must be English (enforced in prompt.txt) — use directly
+    scene_text = (scene if scene else title) or "A fairy-tale countryside scene"
+    return base_prompt.replace("{scene}", scene_text)
 
 def generate_story(raw):
     print(f"[*] AI Narrative Synthesis ({CLAUDE_MODEL_NAME})...")
@@ -97,6 +136,7 @@ def generate_story(raw):
 
 def generate_hero_image(prompt):
     print("[*] Generating Visual Asset (3:4 Ratio)...")
+    print(f"[DEBUG] Exact prompt being used: {prompt}")
     try:
         from google import genai as google_genai
         from google.genai import types
@@ -110,6 +150,27 @@ def generate_hero_image(prompt):
                 number_of_images=1
             )
         )
+        if hasattr(res, 'safety_attributes') and res.safety_attributes:
+             print(f"[DEBUG] Safety Attributes: {res.safety_attributes}")
+             
+        if not res.generated_images:
+            # Safety filter triggered — retry with simplified fallback prompt
+            print("[!] Safety filter triggered. Retrying with fallback prompt...")
+            fallback = (
+                "A classic European folk-tale book illustration. "
+                "Vintage storybook aesthetic. 2D flat vector art with watercolor textures. "
+                "Muted, atmospheric color palette. Soft moody lighting, silhouettes. "
+                "NO TEXT, NO WORDS, NO LETTERS anywhere on the image."
+            )
+            res2 = client.models.generate_images(
+                model=model_name,
+                prompt=fallback,
+                config=types.GenerateImagesConfig(aspect_ratio="3:4", number_of_images=1)
+            )
+            if not res2.generated_images:
+                print("[!] Fallback also blocked. Skipping image.")
+                return None
+            return res2.generated_images[0]
         return res.generated_images[0]
     except Exception as e:
         print(f"[!] Image Error: {e}"); return None
@@ -160,11 +221,24 @@ def upload_media(img, slug, alt_text="", title_text="", description=""):
         print(f"[!] Upload Error: {e}")
         return None
 
-def get_term(tax, val):
+def get_term(tax, val, auto_create=False):
+    """Look up a taxonomy term by name, optionally creating it if not found."""
+    if not val:
+        return None
     try:
-        r = requests.get(f"{WP_BASE_URL}/wp-json/wp/v2/{tax}?search={val}")
-        return r.json()[0]['id'] if r.json() else None
-    except: return None
+        auth = (WP_USERNAME, WP_APP_PASSWORD)
+        r = requests.get(f"{WP_BASE_URL}/wp-json/wp/v2/{tax}?search={val}", auth=auth)
+        if r.status_code == 200 and r.json():
+            return r.json()[0]['id']
+        if auto_create:
+            r2 = requests.post(f"{WP_BASE_URL}/wp-json/wp/v2/{tax}", json={"name": val}, auth=auth)
+            if r2.status_code in (200, 201):
+                print(f"[+] Created new {tax} term: '{val}'")
+                return r2.json()['id']
+        return None
+    except Exception as e:
+        print(f"[!] Term lookup failed ({tax}={val}): {e}")
+        return None
 
 def get_tags(tags):
     ids = []; auth = (WP_USERNAME, WP_APP_PASSWORD)
@@ -203,8 +277,8 @@ def upload_to_wp(data, mid=None, update_id=None, source_url=None):
 
     if mid: payload["featured_media"] = mid
 
-    age  = get_term("age_group", data.get("age_group"))
-    mood = get_term("mood",      data.get("mood"))
+    age  = get_term("age_group", normalize_age_group(data.get("age_group")), auto_create=True)
+    mood = get_term("mood",      normalize_mood(data.get("mood")),           auto_create=True)
     tags = get_tags(data.get("tags", []))
     if age:  payload["age_group"]  = [age]
     if mood: payload["mood"]       = [mood]
@@ -226,13 +300,14 @@ def main():
     p.add_argument("--id", type=int, help="Update existing story by ID")
     a = p.parse_args()
 
-    title, raw = scrape_url(a.url)
-    slug = slugify(title)
+    _, raw = scrape_url(a.url)
+
+    # Generate story first so we can use Claude's clean title for the slug/filename
+    data = generate_story(raw)
+    slug = slugify(data.get("title") or "mese")
 
     if not a.id:
         check_duplicate(slug)
-
-    data = generate_story(raw)
 
     # Pass SEO alt text and title to image upload
     mid = upload_media(

@@ -67,3 +67,6 @@ build/
 /playwright/.auth/
 IMAGES FOR BLOG/verified on github.png
 IMAGES FOR BLOG/verified on github.webp
+
+# Saját lokális fájlok mentésére (pl. szöveg, kép promptok)
+BACKUP/

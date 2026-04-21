@@ -32,7 +32,7 @@ export default defineConfig({
         ]
       },
       workbox: {
-        cacheId: 'mesenet-pwa-v3', // Changed ID to force bust
+        cacheId: 'mesenet-pwa-v4', // Changed ID to force bust on mobile
         cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,webmanifest}'],
         navigateFallback: '/index.html',

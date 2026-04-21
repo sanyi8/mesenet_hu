@@ -12,13 +12,13 @@ export function ReadingProvider({ children }) {
     // Reading log: array of storyIds
     const [readLog, setReadLog] = useState(() => {
         const saved = localStorage.getItem('mesenet-read-log');
-        return saved ? JSON.parse(saved) : [1, 3, 5, 10, 11]; // Pre-fill with some read stories for demo
+        return saved ? JSON.parse(saved) : []; 
     });
 
     // Favorites: array of storyIds
     const [favorites, setFavorites] = useState(() => {
         const saved = localStorage.getItem('mesenet-favorites');
-        return saved ? JSON.parse(saved) : [1, 4, 15]; // Pre-fill with some favorites for demo
+        return saved ? JSON.parse(saved) : []; 
     });
 
     // Ratings: { [storyId]: 'up' | 'down' }

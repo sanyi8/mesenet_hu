@@ -8,18 +8,16 @@ import { useLanguage } from '../context/LanguageContext';
 
 const QUESTION_EMOJIS = ['🫶', '🌱', '💡'];
 const FEEDBACK_PRESETS = [
-    { emoji: '❤️', id: 'love' },
-    { emoji: '👍', id: 'like' },
-    { emoji: '😮', id: 'wow' },
-    { emoji: '😴', id: 'boring' },
-    { emoji: '👎', id: 'dislike' }
+    { emoji: '❤️', id: 'love', label: 'Tetszett' },
+    { emoji: '🤔', id: 'neutral', label: 'Elment' },
+    { emoji: '👎', id: 'dislike', label: 'Nem' }
 ];
 
 export default function ReaderPage() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { cycleTheme, themeIcon } = useTheme();
-    const { updateProgress, markAsRead, rateStory, ratings, lastRead, saveDrawing, userDrawings } = useReading();
+    const { updateProgress, markAsRead, rateStory, ratings, lastRead, saveDrawing, userDrawings, favorites, toggleFavorite } = useReading();
     const { stories, isLoading, error } = useStories();
     const { t, toggleLanguage } = useLanguage();
 
@@ -121,7 +119,19 @@ export default function ReaderPage() {
         setCurrentRating(ratingId);
         rateStory(id, ratingId);
         setFeedbackSubmitted(true);
-        // Simple log or notify logic could go here
+        
+        // Connect to Favorites Log automatically
+        const isFavorited = favorites.includes(String(id)) || favorites.includes(Number(id));
+        if (ratingId === 'love' && !isFavorited) {
+            toggleFavorite(id);
+        } else if (ratingId !== 'love' && isFavorited) {
+            // Remove from favorites if they downgrade their rating
+            toggleFavorite(id);
+        }
+
+        // Also ensure it is marked as read since they gave feedback!
+        markAsRead(id);
+
         console.log('[Feedback] Native reaction:', ratingId);
     };
 

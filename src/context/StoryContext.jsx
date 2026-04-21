@@ -26,7 +26,8 @@ export function StoryProvider({ children }) {
 
                     const ageGroups = getTermsByTaxonomy('age_group');
                     const tags = getTermsByTaxonomy('story_tag');
-                    const moods = getTermsByTaxonomy('mood'); // if mood is taxonomy, although acf mapping mentioned moral_weight, we'll keep it flexible
+                    const moods = getTermsByTaxonomy('mood');
+                    const collections = getTermsByTaxonomy('collection');
                     
                     // Fallback to ACF mood/moral weight if taxonomy doesn't exist
                     let moralWeight = 2; // Default
@@ -50,6 +51,7 @@ export function StoryProvider({ children }) {
                         featuredImage: featuredImage,
                         readingTime: parseInt(acf.reading_time) || 5,
                         ageGroup: ageGroups.length > 0 ? ageGroups[0] : '4-6',
+                        collection: collections.length > 0 ? collections[0] : null,
                         moralWeight: moralWeight,
                         tags: tags,
                         discussionQuestions: [

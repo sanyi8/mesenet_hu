@@ -170,10 +170,11 @@ def generate_hero_image(prompt):
             # Safety filter triggered — retry with simplified fallback prompt
             print("[!] Safety filter triggered. Retrying with fallback prompt...")
             fallback = (
-                "A classic European folk-tale book illustration. "
+                "A classic European folk-tale book illustration. FULL BLEED vertical artwork. "
                 "Vintage storybook aesthetic. 2D flat vector art with watercolor textures. "
-                "Muted, atmospheric color palette. Soft moody lighting, silhouettes. "
-                "NO TEXT, NO WORDS, NO LETTERS anywhere on the image."
+                "Bright, luminous, cheerful, and well-lit daytime color palette. Soft, warm lighting. "
+                "NO TEXT anywhere. NO frame, NO vertical lines, NO pillars, NO borders on the sides, NO margins. "
+                "Ensure a seamless full-bleed image extending perfectly to the very edges."
             )
             res2 = client.models.generate_images(
                 model=model_name,

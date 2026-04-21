@@ -22,7 +22,7 @@ export default function LogPage() {
       <div className="log-header">
         <h1>{t('logTitle')}</h1>
         <p className="subtitle">
-          {t('logSubtitle', readLog.length)}
+          {t('logSubtitle', readStories.length)}
         </p>
       </div>
 
@@ -37,7 +37,7 @@ export default function LogPage() {
           className={`tab-btn ${activeTab === 'favorites' ? 'active' : ''}`}
           onClick={() => setActiveTab('favorites')}
         >
-          {t('favorites', favorites.length)}
+          {t('favorites', favoriteStories.length)}
         </button>
       </div>
 

@@ -2087,17 +2087,29 @@ input:checked + .slider:before {
   100% { transform: scale(2.5); opacity: 0; border-width: 1px; }
 }
 
-.animate-ember-steady { animation: ember-steady 7s linear forwards; }
+@keyframes slide-up-panel {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-ember-steady { animation: ember-steady 7s linear both; }
 .animate-jump-extra-slow { animation: heart-pulse-extra-slow 0.8s ease-in-out 3; }
 .animate-pin-stab { animation: pin-stab 0.6s cubic-bezier(0.17, 0.67, 0.83, 0.67) forwards; }
 .animate-shake-calm { animation: shake-calm 1s ease-in-out infinite; }
 .animate-share-bloom { animation: share-bloom 0.8s ease-in-out forwards; }
 .animate-ripple { animation: ripple-out 1.2s ease-out forwards; }
-.animate-slide-up-smooth { animation: slide-down 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.animate-slide-up-smooth { animation: slide-up-panel 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
 .animate-jump-3 { animation: heart-jump-3 0.8s ease-in-out 2; }
 .animate-slide-down { animation: slide-down 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 .hover-wiggle:hover { animation: icon-wiggle 0.4s ease-in-out infinite; }
+
+.active-share { color: #60a5fa; opacity: 1; }
 
 .action-row {
   display: flex;
@@ -2257,4 +2269,133 @@ input:checked + .slider:before {
 }
 
 .gradient-next-btn:hover .gradient-next-shine { transform: translateX(100%); }
+
+/* ============================================
+   SOCIAL SHARE PANEL
+   ============================================ */
+
+.social-share-panel {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.social-share-label {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  opacity: 0.35;
+  text-align: center;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+  font-family: system-ui, sans-serif;
+}
+
+.social-share-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.social-share-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 4px;
+  border-radius: 16px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+  font-family: system-ui, sans-serif;
+}
+
+.social-share-item:hover {
+  color: var(--social-color, var(--accent));
+  background: var(--social-bg, var(--accent-soft));
+  border-color: var(--social-color, var(--accent));
+  transform: translateY(-2px);
+}
+
+.social-share-item:active {
+  transform: scale(0.95);
+}
+
+.social-share-item.copy-item.copied {
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+  border-color: #22c55e;
+}
+
+/* ============================================
+   DISLIKE CONFIRMATION ANIMATION
+   ============================================ */
+
+@keyframes confirm-pop {
+  0%   { opacity: 0; transform: scale(0.88) translateY(6px); }
+  14%  { opacity: 1; transform: scale(1.03) translateY(0); }
+  20%  { transform: scale(1); }
+  78%  { opacity: 1; }
+  100% { opacity: 0; transform: scale(0.96) translateY(-4px); }
+}
+
+@keyframes check-draw {
+  0%   { transform: scale(0) rotate(-20deg); opacity: 0; }
+  50%  { transform: scale(1.25) rotate(5deg); opacity: 1; }
+  70%  { transform: scale(0.92) rotate(-2deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.animate-confirm-pop {
+  animation: confirm-pop 3.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.dislike-confirm {
+  margin-top: 16px;
+  padding: 20px 16px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-card);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.dislike-confirm-check {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(34, 197, 94, 0.12);
+  border: 2px solid rgba(34, 197, 94, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #22c55e;
+  margin-bottom: 4px;
+  animation: check-draw 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both;
+}
+
+.dislike-confirm-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+}
+
+.dislike-confirm-sub {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  opacity: 0.75;
+}
 

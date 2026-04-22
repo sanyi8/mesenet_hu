@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Heart, Pin, ThumbsDown, MessageCircle, Palette, Share2, ArrowRight } from 'lucide-react';
+import { Heart, Pin, ThumbsDown, MessageCircle, Palette, Share2, ArrowRight, Check } from 'lucide-react';
+import SocialShareButton from '../components/SocialShareButton';
 import { useTheme } from '../context/ThemeContext';
 import { useReading } from '../context/ReadingContext';
 import { useStories } from '../context/StoryContext';
@@ -22,9 +23,12 @@ const FireEmber = ({ id, x, y, size, delay, color }) => {
   const driftEnd = (Math.random() - 0.5) * 35;
 
   return (
-    <div 
-      className="absolute pointer-events-none rounded-full animate-ember-steady opacity-0"
+    <div
+      className="animate-ember-steady"
       style={{
+        position: 'absolute',
+        pointerEvents: 'none',
+        borderRadius: '50%',
         width: `${size}px`,
         height: `${size}px`,
         left: `${x}%`,
@@ -35,7 +39,7 @@ const FireEmber = ({ id, x, y, size, delay, color }) => {
         '--drift-start': `${driftStart}px`,
         '--drift-end': `${driftEnd}px`,
         transform: 'translate(-50%, -50%)',
-        zIndex: 10
+        zIndex: 10,
       }}
     />
   );
@@ -69,6 +73,8 @@ export default function ReaderPage() {
     const [workshopOpen, setWorkshopOpen] = useState(false);
     const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
     const [showDislikeReasons, setShowDislikeReasons] = useState(false);
+    const [dislikeConfirmed, setDislikeConfirmed] = useState(false);
+    const [showSharePanel, setShowSharePanel] = useState(false);
     const [embers, setEmbers] = useState([]);
     const [isJumping, setIsJumping] = useState(false);
     const [isSharing, setIsSharing] = useState(false);
@@ -150,9 +156,20 @@ export default function ReaderPage() {
     };
 
     const handleRate = (ratingId) => {
+        // Toggle off if the same rating is clicked again
+        if (currentRating === ratingId) {
+            setCurrentRating(null);
+            rateStory(id, null);
+            setShowDislikeReasons(false);
+            setFeedbackSubmitted(false);
+            const isFavorited = favorites.includes(String(id)) || favorites.includes(Number(id));
+            if (ratingId === 'love' && isFavorited) toggleFavorite(id);
+            return;
+        }
+
         setCurrentRating(ratingId);
         rateStory(id, ratingId);
-        
+
         if (ratingId === 'dislike') {
             setShowDislikeReasons(true);
             setFeedbackSubmitted(false);
@@ -160,7 +177,7 @@ export default function ReaderPage() {
             setShowDislikeReasons(false);
             setFeedbackSubmitted(true);
         }
-        
+
         // Connect to Favorites Log automatically
         const isFavorited = favorites.includes(String(id)) || favorites.includes(Number(id));
         if (ratingId === 'love') {
@@ -197,6 +214,8 @@ export default function ReaderPage() {
         console.log('[Feedback] Dislike reason:', reason);
         setShowDislikeReasons(false);
         setFeedbackSubmitted(true);
+        setDislikeConfirmed(true);
+        setTimeout(() => setDislikeConfirmed(false), 3200);
     };
 
     const getNextStory = () => {
@@ -204,24 +223,9 @@ export default function ReaderPage() {
         return stories[(idx + 1) % stories.length];
     };
 
-    const handleShare = async (e) => {
+    const handleShare = (e) => {
         e.stopPropagation();
-        setIsSharing(true);
-        setTimeout(() => setIsSharing(false), 2000);
-
-        if (navigator.share) {
-            try {
-                await navigator.share({
-                    title: story.title,
-                    text: 'A Mesenet appban olvasom!',
-                    url: window.location.href
-                });
-            } catch (err) {
-                console.log('Share failed', err);
-            }
-        } else {
-            alert('A megosztás nem támogatott ezen az eszközön.');
-        }
+        setShowSharePanel(p => !p);
     };
 
     const handleFileChange = (e) => { 
@@ -337,8 +341,8 @@ export default function ReaderPage() {
                     {/* Premium Action Card */}
                     <div className="reader-action-card glass-blur">
                         <div className="action-row">
-                            <div className="relative">
-                                <button 
+                            <div style={{ position: 'relative' }}>
+                                <button
                                     className={`action-btn ${currentRating === 'love' ? 'active-like' : ''}`}
                                     onClick={(e) => { e.stopPropagation(); handleRate('love'); }}
                                     title={t('Tetszett')}
@@ -381,16 +385,21 @@ export default function ReaderPage() {
                                 />
                             </button>
 
-                            <div className="relative">
-                                {isSharing && <div className="absolute inset-0 rounded-full border-2 border-current animate-ripple pointer-events-none" />}
-                                <button 
-                                    className={`action-btn ${isSharing ? 'text-blue-500' : ''}`}
+                            <div style={{ position: 'relative' }}>
+                                {showSharePanel && (
+                                    <div
+                                        className="animate-ripple"
+                                        style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid currentColor', pointerEvents: 'none' }}
+                                    />
+                                )}
+                                <button
+                                    className={`action-btn ${showSharePanel ? 'active-share' : ''}`}
                                     onClick={handleShare}
                                     title={t('Megosztás')}
                                 >
-                                    <Share2 
-                                        size={24} 
-                                        className={isSharing ? 'animate-share-bloom' : 'hover-wiggle'} 
+                                    <Share2
+                                        size={24}
+                                        className={showSharePanel ? 'animate-share-bloom' : 'hover-wiggle'}
                                     />
                                 </button>
                             </div>
@@ -415,6 +424,23 @@ export default function ReaderPage() {
                                     <span>Egyéb ok</span>
                                 </button>
                             </div>
+                        )}
+
+                        {dislikeConfirmed && (
+                            <div className="dislike-confirm animate-confirm-pop">
+                                <div className="dislike-confirm-check">
+                                    <Check size={26} strokeWidth={2.5} />
+                                </div>
+                                <p className="dislike-confirm-title">Köszönjük!</p>
+                                <p className="dislike-confirm-sub">Segítesz jobbá tenni a meséket.</p>
+                            </div>
+                        )}
+
+                        {showSharePanel && (
+                            <SocialShareButton
+                                url={window.location.href}
+                                title={story.title}
+                            />
                         )}
                     </div>
 
